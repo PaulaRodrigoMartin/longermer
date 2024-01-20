@@ -1,0 +1,245 @@
+---
+title: "Check longmers"
+author: "Paula Rodrigo"
+date: "2024-01-20"
+output: html_document
+---
+
+```{r libraries, include=FALSE}
+library(dplyr)
+library(ggplot2)
+library(Biostrings)
+library(remotes)
+library(gridExtra)
+library(msa)
+library(tools)
+require(ggseqlogo)
+library(stringr)
+source("functions.R")
+```
+
+```{r data}
+ann <-read.csv("C:/Users/paula/Documents/Aarhus master/2/Moma/data/annotation.csv", header = TRUE, row.names = 1) # annotation table
+seqlist <- readRDS("C:/Users/paula/Documents/Aarhus master/2/Moma/data/hs.utr3.seqlist.rds")# input for mireact
+all <-  readRDS("C:/Users/paula/Documents/Aarhus master/2/Moma/data/mirnaActivity_th_downsampled.rds")# output from miReact
+seqs <- readRDS("C:/Users/paula/Documents/Aarhus master/2/Moma/data/hs.utr3.seqs.rds") # to map the genes
+longmers <- readRDS("/results/log/longmers.rds") # longmers from code/main.Rmd
+```
+
+#Set threshold for p-value correlations
+Plot distribution of correlations of the kmers of length 7(top 100 vs random 100) in order to set the threshold in the "filter_and_remove_low_occurrences()" function
+```{r correlation threshold visualization}
+pdf("/results/plots/threshold_corr_celltype_random_100_threspecialfinal.pdf", height = 3, width = 5)
+for (i in colnames(kmers[1:11])) {
+  # Calculate correlation distribution for top 100
+  topkmers <- kmers[1:100, i]
+  h <- rownames(ann)[which(ann$typecell == i)]
+  hu <- all[which(rownames(all) %in% topkmers), h]
+  hul <- t(hu)
+  hul <- as.data.frame(hul)
+  ju <- cor(hul, method = "spearman")
+  corr_values <- as.data.frame(as.table(ju))
+
+  # Calculate correlation distribution for random 100
+  random_indices <- sample(1:nrow(all), 100)
+  random_hu <- all[random_indices, h]
+  random_hul <- t(random_hu)
+  random_hul <- as.data.frame(random_hul)
+  ju_random <- cor(random_hul, method = "spearman")
+  corr_values_random <- as.data.frame(as.table(ju_random))
+  # Take most positive 0.05 to set threshold specific to cell type
+  quantile_value <- quantile(corr_values_random$Freq, 0.95)
+  # Bind dataframes
+  corr_values$var <- "top100"
+  corr_values_random$var <- "random100"
+  final_dataframe <- bind_rows(corr_values, corr_values_random)
+  # Plot
+  plot_random <- ggplot(final_dataframe, aes(x = Freq, group = var, fill = var)) +
+    geom_density( alpha = 0.5) +
+    #geom_vline(aes(xintercept = second_peak_start), color = "blue", linetype = "dashed", size = 1) +
+    geom_vline(aes(xintercept = quantile_value), color = "red", linetype = "dashed", size = 1) +
+    theme_classic() +
+    #scale_fill_manual(values = custom_palette) +
+    ylab("") +
+    xlab("Spearman correlation coefficient")+
+    labs(title = paste("Correlation distribution in", i))+
+    guides(fill = guide_legend(title = "Distribution", title.position = "top", title.hjust = 0.5))
+  print(plot_random)
+}
+dev.off()
+```
+
+#Include kmers with mismatches and filter out lowly correlated ones
+Align each longmer with the original kmers to account for mismatches and filtering (correlation of kmer p-values) --> more robust longer kmers.
+Uncomment the next chunk once if you want to plot the correlation matrices for each longmer and/or save the file
+```{r mismatch and correlation dataframe}
+#pdf("/results/plots/correlation_matrices_top100_godt.pdf", height = 10, width = 15)
+plot_list <- list()
+long_and_7mers <- list()
+for (i in rownames(longmers)){
+  cellnames <- colnames(longmers[i, longmers[i,] == 1 & colnames(longmers) != "RowSum"])
+  for (j in cellnames){
+    seven <- kmers[1:100,j] ## change value 100
+    ## distance matrix to know which kmers have formed the longermer
+    dist_matrix <- adist(i, seven, costs = c(insertion = 7, deletion = 7, substitution =4))
+    similarity_matrix <- 1 / (1 + dist_matrix)# Convert the distance matrix into a similarity matrix
+    rownames(similarity_matrix)<-i
+    colnames(similarity_matrix)<-seven
+    b <- colnames(similarity_matrix)[which(similarity_matrix == max(similarity_matrix))]
+    ## Calculate correlation matrix, to discard kmers that dont have correlation with activities or add     kmers that have a mismatch and correlate in activity
+    cells<- rownames(ann)[which(ann$typecell == j)]
+    acts <- all[which(rownames(all) %in% b),cells]
+    ac <- t(acts)
+    ac <- as.data.frame(ac)
+    row_means <- rowMeans(acts)
+
+    ## Normalize the dataset by subtracting the mean of each row
+    corr <- cor(ac, method = "spearman")
+    cor_df <- as.data.frame(as.table(corr))
+    random_indices <- sample(1:nrow(all), 100)
+    random_hu <- all[random_indices, h]
+    random_hul <- t(random_hu)
+    random_hul <- as.data.frame(random_hul)
+
+    # Calculate correlation for random 100
+    ju_random <- cor(random_hul, method = "spearman")
+    corr_values_random <- as.data.frame(as.table(ju_random))
+    quantile_value <- quantile(corr_values_random$Freq, 0.95) #threshold
+    # Estimate the probability density function
+    # density_result <- density(cor_df$Freq)
+    # peaks <- find_minima(density_result)
+    ## Identify the start of the second peak
+    # second_peak_start <- peaks[peaks$x > 0.2, "x"][1]
+    ## set threshold to eliminate the kmers that dont correlate
+    filtered_df <- filter_and_remove_low_occurrences(cor_df, threshold = quantile_value)
+    if (!is.null(filtered_df) && nrow(filtered_df) >=9){ ## at least its composed with 3 kmers that have more correlation in their activities than 0.5
+      # plot <- ggplot(filtered_df, aes(Var1, Var2, fill = Freq, label = sprintf("%.2f", Freq))) +
+      # geom_tile(color = "white") +
+      # geom_text(color = "black", size = 5) +
+      ##scale_fill_gradient(low = "blue", high = "red", name = "Correlation") +
+      # scale_fill_distiller(palette = "RdBu", direction = -1, name = "Correlation",limits = c(0, 1)) +
+      # theme_minimal() +
+      # labs(title = paste("Correlation 7mers of longmer", i ,"in", j), x = " ", y = " ")
+      # plot_list[paste(i,j)] <- plot
+      # print(plot)
+
+
+      long_and_7mers[[paste(i, j)]] <- unique(c(filtered_df$Var1)) ## 7mers that are part of the longmer
+    }}}
+#dev.off()
+# file_conn <- file("results/log/7mers_shorter_longmers.txt", open = "w")
+# writeLines(long_and_7mers, file_conn)
+```
+
+#Create PFM, regular expression and alignment to 3'UTRs
+Align longer kmers as regular expressions accounting for substitutions to the 3'UTR sequences to further filtering.
+```{r PFM and regexpression}
+list_names <- names(long_and_7mers)
+b <- character(length = length(list_names))
+a <- character(length = length(list_names))#init empty vector
+
+row_name <- list()
+for (i in seq_along(list_names)) {
+  row_name <- append(row_name,sub(" .*", "", list_names[i]))
+}
+row_name <- unlist(row_name)
+
+# work with matrix because in a dataframe we cannot have duplicated rownames
+matrix_data <- matrix(
+  data = NA_character_,
+  ncol = 4,  
+  nrow = length(row_name),  
+  dimnames = list(row_name, c("regexp", "celltype", "align_UTR", "n_UTR_aligned"))
+)
+
+## BUILD REGEXP, ALIGN IT TO 3'UTRs, 
+for (i in seq_along(list_names)) {
+  b <- sub(" .*", "", list_names[i]) #extract the longmer
+  cellt <- sub(".*\\s", "", list_names[i]) #extract the celltype
+  a <- long_and_7mers[list_names[i]] #extract all the 7mers that have passed the filters and conform the longermer
+  msa_result <- msa(as.character(a[[1]]), type="dna") ## kmers that conform the longermer
+  t <- Biostrings::consensusMatrix(DNAStringSet(msa_result), baseOnly=TRUE)
+  t <- t[-nrow(t), ]
+
+  final_list <- list()
+  for (col in 1:ncol(t)) {
+    col_list <- create_regexp(t[, col]) # also create_regexp_GUwpbble()
+    final_list <- c(final_list, col_list)
+  }
+
+  # Convert the final list to a single string --> regular expression
+  regexpression <- paste(final_list, collapse = "")
+  matrix_data[i, "regexp"] <- regexpression
+  matrix_data[i, "celltype"] <- cellt
+  # Align the regexpression to the 3'UTRs
+  x <- align.motif(regexpression, seqlist, lf = 3, rf = 3)
+  if (!is.null(x)){
+    matrix_data[i, "align_UTR"] <- T
+    matrix_data[i, "n_UTR_aligned"] <- as.numeric(length(x))
+  } else {
+    matrix_data[i, "align_UTR"] <- F
+    matrix_data[i, "n_UTR_aligned"] <- 0
+  }
+}
+
+# Save matrix_data --> shows the initial longmer, the updated longmers' regexpression and how many times it has aligned to some 3'UTR
+write.csv(matrix_data, file = "/results/final_longmers.csv", row.names = T, col.names = T)
+```
+
+#Build logos for visualization
+```{r logo}
+pattern_nt <- "[A-Za-z]"
+pattern_sub <- "\\|"
+plot_list <- list()
+for (i in 1:nrow(matrix_data)) {
+  if (matrix_data[i, "align_UTR"] == T & as.numeric(matrix_data[i, "n_UTR_aligned"]) < 500) {
+    x <- align.motif_updated(matrix_data[i,"regexp"], seqlist, lf = 10, rf = 10)
+    if (length(x)>1){
+      letter_count <- str_count(matrix_data[i,"regexp"], pattern_nt)
+      pipe_count <- str_count(matrix_data[i,"regexp"], pattern_sub)
+      gg <- ggplot() + 
+      geom_logo(x, method = 'prob') + 
+      annotate('segment', x = 10, xend= ((letter_count-pipe_count)+9), y=0, yend=0, size=1) + 
+      theme_logo()+
+      ggtitle(paste0(matrix_data[i,"regexp"], "  in  " , matrix_data[i,"celltype"], "  found  ", matrix_data[i,"n_UTR_aligned"], " times")) + theme(plot.title = element_text(hjust = 0.5))
+      plot_list[[i]] <- gg
+    }
+  }
+}
+
+# Eliminate the plots that are empty 
+plot_list <- Filter(Negate(is.null), plot_list)
+```
+
+Save the logos
+```{r save logos}
+pdf("/results/plots/logos_good.pdf", height = 50, width =20) # adjust path to file, height and width as needed
+grid.arrange(grobs = plot_list, ncol = 1)  # adjust the number of columns and rows as needed
+dev.off()
+```
+
+# After studying your longmers, does any align with a viral genome? 
+What's the probability of finding that specific motif of that specific length non-randomly in the genome?
+```{r}
+# Parameters
+genome_length <- 29891
+sequence_length <- 9
+
+# Calculate probability using combinatorics
+probability <- choose(genome_length, sequence_length) / 4^sequence_length
+```
+
+# GSEA analysis 
+Map the alignments of the 3'UTRS to the actual genes and query the gene names in g:Profiler, for example.
+```{r}
+x <- align.motif(regexp, seqlist, lf = 50, rf =50)
+genes <- as.character()
+d <- 0
+for (i in x){
+  s <- seqs$gid[which(grepl(i, seqs$sequence)==T)]
+  genes <- append(genes, s)
+  d <- d+1
+  print(d)
+}
+write.csv2(genes, file = "/results/gsea_genes.csv")
+```

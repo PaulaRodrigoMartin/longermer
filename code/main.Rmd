@@ -1,0 +1,93 @@
+---
+title: "motif_elongator"
+author: "Paula Rodrigo"
+date: "2024-01-10"
+output: html_document
+---
+
+```{r libraries, include=FALSE}
+library(dplyr)
+library(ggplot2)
+library(Biostrings)
+library(remotes)
+library(gridExtra)
+library(msa)
+library(tools)
+require(ggseqlogo)
+library(stringr)
+source("functions.R")
+```
+
+```{r data}
+ann <-read.csv("C:/Users/paula/Documents/Aarhus master/2/Moma/data/annotation.csv", header = TRUE, row.names = 1) # annotation table
+seqlist <- readRDS("C:/Users/paula/Documents/Aarhus master/2/Moma/data/hs.utr3.seqlist.rds")# input for mireact
+all <-  readRDS("C:/Users/paula/Documents/Aarhus master/2/Moma/data/mirnaActivity_th_downsampled.rds")# output from miReact
+seqs <- readRDS("C:/Users/paula/Documents/Aarhus master/2/Moma/data/hs.utr3.seqs.rds") # to map the genes
+```
+
+# Order kmers by activity and save the ordered list
+```{r order kmers}
+# create new dataframe with columns each celltype and rows all the kmers
+rank_mat <- data.frame(matrix(0, nrow = nrow(a), ncol = length(unique(ann$typecell))))
+colnames(rank_mat) <- unique(ann$typecell)
+rownames(rank_mat) <- rownames(a)
+
+for (ct in unique(ann$typecell)) {
+  cells<- rownames(ann)[which(ann$typecell == ct)]
+  rank_mat[ct] <- rowMeans(a[,cells])
+}
+
+diff_mat_sorted <- apply(rank_mat, 2, sort, decreasing = TRUE)
+row_names_sorted <- sapply(1:ncol(diff_mat_sorted), function(i) {
+  row_names <- rownames(rank_mat)
+  matched_row_names <- row_names[order(rank_mat[, i], decreasing = TRUE)]
+  return(matched_row_names)
+})
+x <- as.data.frame(row_names_sorted)
+colnames(x) <- colnames(rank_mat)
+head(x)
+new <- cbind(x, diff_mat_sorted)
+colnames(new) <- c("Neu"  ,     "B"     ,    "Mono"  ,    "NK"   ,     "T"   ,      "Macro"  ,   "Plasma" ,   "DC"     ,   "Ciliated" , "Secretory", "Squamous" , "Neu_score"  ,     "B_score"     ,    "Mono_score"  ,    "NK_score"   ,     "T_score"   ,      "Macro_score"  ,   "Plasma_score" ,   "DC_score"     ,   "Ciliated_score" , "Secretory_score", "Squamous_score")
+saveRDS(object = new, file = "/results/log/ranked_kmers_celltype.rds")
+kmers <- new
+```
+
+
+#Construct longer kmers with the top 100 kmers per cell type
+```{r construct longmers}
+threshold <- 5
+dict <- list()
+
+for (celltype in colnames(kmers)[1:11]){
+  final_km <- repeat_until_condition_met(kmers[[celltype]][1:100], threshold) #change value 200
+  longmers <- list()
+  for (i in final_km){
+    if (nchar(i)>12){
+      longmers <-append(longmers,i)}}
+  dict[[celltype]] <- longmers}
+#summary(dict)
+```
+
+#Analyze all longmers to see if they are unique or common between cell types
+```{r summary longmers}
+all_strings <- unique(unlist(dict))
+
+# Create an empty data frame with rows for each string and columns for each celltype
+df <- data.frame(matrix(0, ncol = length(colnames(kmers[1:11])), nrow = length(all_strings)))
+colnames(df) <- colnames(kmers[1:11])
+rownames(df) <- all_strings
+
+# Fill the dataframe
+for (col in colnames(df)) {
+  for (row in rownames(df)) {
+    if (row %in% dict[[col]]) {
+      df[row, col] <- df[row, col] + 1}}}
+df$RowSum <- rowSums(df)
+
+saveRDS(object = df, file = "/results/log/longmers.rds")
+```
+
+
+
+
+
