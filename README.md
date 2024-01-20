@@ -4,8 +4,8 @@ This code takes miReact output (short kmers) as input and constructs longer moti
 ```mermaid
 graph TD;
     seqlist[seqs/hs.utr3.seqlist.rds]
-    %%seqs[seqs/hs.utr3.seq.rds]
-    mireact_input[data/xxxxxxx]
+    seqs[seqs/hs.utr3.seq.rds]
+    mireact_input[data/th_mireact_exp_downsampled.rds]
     miReact_output[data/mirnaActivity_th_downsampled.rds]
     7mers[patterns/patterns7.csv]
     annotation[data/annotation.csv]
@@ -45,5 +45,6 @@ graph TD;
     %%finallongmers-->GSEA
     %%seqs-->GSEA
     miReact_output-->main_notebook
+    seqs --> check_notebook
 
 ```
