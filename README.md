@@ -29,6 +29,7 @@ graph TD;
     style longmers fill:#7cb5ec,stroke:#333,stroke-width:2px;
     style finallongmers fill:#FFA07A,stroke:#333,stroke-width:2px;
     style plots fill:#FFA07A,stroke:#333,stroke-width:2px;
+    style GSEA fill:#FFA07A,stroke:#333,stroke-width:2px;
 
 
     seqlist-->miReact
