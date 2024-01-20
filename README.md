@@ -14,7 +14,7 @@ graph TD;
     functionsc[code/functions_check.R]
     main_notebook[code/main.Rmd]
     check_notebook[code/check.Rmd]
-    %%GSEA[code/GSEA.Rmd]
+    GSEA[results/gsea_genes.csv]
     plots[results/plots]
     longmers[results/longmers.rds]
     finallongmers[results/final_longmers.rds]
@@ -42,6 +42,7 @@ graph TD;
     longmers-->check_notebook
     check_notebook-->plots
     check_notebook-->finallongmers
+    check_notebook-->GSEA
     %%finallongmers-->GSEA
     %%seqs-->GSEA
     miReact_output-->main_notebook
