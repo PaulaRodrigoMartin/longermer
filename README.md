@@ -9,7 +9,7 @@ graph TD;
     miReact_output[data/mirnaActivity_th_downsampled.rds]
     7mers[patterns/patterns7.csv]
     annotation[data/annotation.csv]
-    miReact[code/mireact.sh]
+    miReact[code/mireact.R]
     functions[code/functions_build.R]
     functionsc[code/functions_check.R]
     main_notebook[code/main.Rmd]
