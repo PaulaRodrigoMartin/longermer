@@ -1,10 +1,7 @@
 # longermer
 This code takes miReact output (short kmers) as input and constructs longer motifs with potential biological relevance
 
-To run miReact follow the instructions in https://github.com/muhligs/miReact. To access the publicly available data access Ren et al. (2021). COVID-19 immune features revealed by a large-scale single-cell transcriptome atlas. Cell, 184(7), 1895–1913.e19. https://doi.org/10.1016/j.cell.2021.01.053.
-
-
-
+To run miReact follow the instructions at https://github.com/muhligs/miReact. To access the publicly available data access Ren et al. (2021). COVID-19 immune features revealed by a large-scale single-cell transcriptome atlas. Cell. https://doi.org/10.1016/j.cell.2021.01.053.
 
 ```mermaid
 graph TD;
@@ -55,3 +52,6 @@ graph TD;
     seqs --> check_notebook
 
 ```
+
+Results were obtained after working with a subset dataset formed by 10,000 cells, of which 3,085 are infected. 11 different cell types were studied. This is an example of potential results after running the analysis:
+
