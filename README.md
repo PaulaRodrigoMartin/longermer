@@ -65,7 +65,7 @@ Results were obtained after working with a subset dataset formed by 10,000 cells
 
 Further plots can be created with this code (longermer/results/log):
 
-Spearman correlation distribution of the modified p-values from miReact for top 100 kmers used for the analysis vs random 100 kmers from the distribution:
+Threshold choice (Spearman correlation distribution of the modified p-values from miReact for top 100 kmers used for the analysis vs random 100 kmers from the distribution) used to discard kmers that do not correlate (right):
 
 <img src = "https://github.com/PaulaRodrigoMartin/longermer/assets/112614977/90d6edc6-4001-4deb-9efd-d88b14e17580" width="400" height="300"> 
 <img src = "https://github.com/PaulaRodrigoMartin/longermer/assets/112614977/6ab0a435-6bdf-4518-b98d-77ab2154a092 width="400" height="300">
