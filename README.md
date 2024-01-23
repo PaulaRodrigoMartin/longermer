@@ -57,8 +57,8 @@ Results were obtained after working with a subset dataset formed by 10,000 cells
 
 | Final longmer | Initial longmer | Cell type |
 | :---         |     :---:      |          ---: |
-| ATTA(C|G)(A|G)G(A|G)TTAC   | GGGATTACAGGT    | Neutrophil    |
-| AACC(C|T)TATGA     | AACCCTATGAAT       | Squamous     |
+| ATTA(C\|G)(A\|G)G(A\|G)TTAC   | GGGATTACAGGT    | Neutrophil    |
+| AACC(C\|T)TATGA     | AACCCTATGAAT       | Squamous     |
 | TTCACCATGTT     | TTCACCATGTT       | T, B cell, Macrophage     |
 | AATGTGGCA    | GAATGTGGCA       | Macrophage     |
 
