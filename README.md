@@ -53,7 +53,7 @@ graph TD;
 
 ```
 
-Results were obtained after working with a subset dataset formed by 10,000 cells, of which 3,085 were infected. 11 different cell types were studied. This is an example of potential results after running the analysis:
+Results were obtained after working with a subset dataset formed by 10,000 cells, of which 3,085 were infected. 11 different cell types were studied. This is an example of potential results after running the analysis (longermer/results/log/longmers_aftercheck.csv):
 
 | Final longmer | Initial longmer | Cell type |
 | :---         |     :---:      |          ---: |
@@ -61,4 +61,13 @@ Results were obtained after working with a subset dataset formed by 10,000 cells
 | AACC(C\|T)TATGA     | AACCCTATGAAT       | Squamous     |
 | TTCACCATGTT     | TTCACCATGTT       | T, B cell, Macrophage     |
 | AATGTGGCA    | GAATGTGGCA       | Macrophage     |
+
+Further plots can be created with this code (based on the last motif):
+
+Spearman correlation distribution of the modified p-values from miReact for top 100 kmers used for the analysis vs random 100 kmers from the distribution:
+![image](https://github.com/PaulaRodrigoMartin/longermer/assets/112614977/90d6edc6-4001-4deb-9efd-d88b14e17580)
+
+Logo of the final longmer after alignment to the whole set of sequences, including 10 flanking bases to both sides of the longmer:
+![image](https://github.com/PaulaRodrigoMartin/longermer/assets/112614977/4f1e3e0e-edde-4d8e-b5c3-32df5362680d)
+
 
