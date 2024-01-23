@@ -16,10 +16,10 @@ graph TD;
     functionsc[code/functions_check.R]
     main_notebook[code/main.Rmd]
     check_notebook[code/check.Rmd]
-    GSEA[results/gsea_genes.csv]
+    GSEA[results/log/gsea_genes.csv]
     plots[results/plots]
-    longmers[results/longmers.rds]
-    finallongmers[results/final_longmers.rds]
+    longmers[results/log/longmers_beforecheck.csv.rds]
+    finallongmers[results/log/longmers_aftercheck.csv]
     
 
     style seqlist fill:#7cb5ec,stroke:#333,stroke-width:2px;
