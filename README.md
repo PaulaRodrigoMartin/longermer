@@ -63,7 +63,7 @@ Results were obtained after working with a subset dataset formed by 10,000 cells
 | TTCACCATGTT     | TTCACCATGTT       | T, B cell, Macrophage     |
 | AATGTGGCA    | GAATGTGGCA       | Macrophage     |
 
-Further plots can be created with this code (results/log):
+Further plots can be created with this code (longermer/results/log):
 
 Spearman correlation distribution of the modified p-values from miReact for top 100 kmers used for the analysis vs random 100 kmers from the distribution:
 
